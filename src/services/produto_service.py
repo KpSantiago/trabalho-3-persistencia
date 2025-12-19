@@ -16,7 +16,7 @@ async def visualizarProdutos():
 
 async def cadastrarProduto(novoProduto: Produto):
     await ProductsCollection.insert_one(dict(novoProduto))
-    return 1
+    return 2
 
 
 async def deletarProduto():

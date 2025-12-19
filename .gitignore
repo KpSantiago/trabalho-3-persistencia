@@ -5,6 +5,7 @@ venv/
 # Cache Python
 __pycache__/
 *.pyc
+*.py[cod]
 
 # Logs
 *.log
