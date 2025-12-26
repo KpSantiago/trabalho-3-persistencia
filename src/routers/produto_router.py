@@ -1,16 +1,16 @@
 from fastapi import APIRouter
 from services import produto_service as service
-from models.produto import Produto
+from models.produto import Produto, ProdutoUpdate
 
 routerProduto = APIRouter(prefix="/produto", tags=["Produto"])
 
-@routerProduto.get("/ProdutoPorId/{id}")
-async def produtoPorId():
-    return await service.produtoPorId()
+@routerProduto.get("/produtoPorNome/{nome}/{limit}/{offset}")
+async def ProdutoPorNome(nome:str,limit:int,offset:int):
+    return await service.produtosPorNome(nome,limit,offset)
 
-@routerProduto.get("/visualizar/{offset}/{qtd}")
-async def visualizarProduto():
-    return await service.visualizarProdutos()
+@routerProduto.get("/produtosPorCategoria/{categoria}/{limit}/{offset}")
+async def ProdutosPorCategoria(categoria: str,limit:int,offset:int):
+    return await service.produtosPorCategoria(categoria,limit,offset)
 
 @routerProduto.get("/fornecedoresDeProdutos/{id}")
 async def fornecedoresDeProdutos():
@@ -25,9 +25,9 @@ async def cadastrarProduto(novoProduto: Produto):
     return await service.cadastrarProduto(novoProduto)
 
 @routerProduto.delete("/deletar/{id}")
-async def deletarProduto():
+async def deletarProduto(id: str):
     return await service.deletarProduto(id)
 
-@routerProduto.put("/atualizar/{id}")
-async def atualizarProduto():
-    return await service.atualizarProduto()
+@routerProduto.put("/atualizar")
+async def atualizarProduto(update: ProdutoUpdate):
+    return await service.atualizarProduto(update)
