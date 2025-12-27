@@ -40,7 +40,7 @@ async def cadastrarProduto(novoProduto: Produto):
 
 async def deletarProduto(id):
     try:
-        query_filter = { "_id": repr(ObjectId(id)) }
+        query_filter = { "_id": ObjectId(id) }
         result = await ProductsCollection.delete_one(query_filter)
         
         if(result.deleted_count != 0):
@@ -51,9 +51,8 @@ async def deletarProduto(id):
     except ValueError as e:
         return e.args[0]
 
-    
 
-async def atualizarProduto(update: ProdutoUpdate):
+async def atualizarProduto(id,update: ProdutoUpdate):
     try:
         i = 0
         chavesClasse = list(ProdutoUpdate.model_fields.keys())
@@ -64,7 +63,21 @@ async def atualizarProduto(update: ProdutoUpdate):
                 raise ValueError("Modelo de requisicao invalida.")
             i += 1
 
-        return "att obj"
+        update_filds = dict(update)
+        for key in chavesRequest:
+            if(update_filds[key] == None):
+                del update_filds[key]
+
+
+        query_filter = { "_id": ObjectId(id) }
+        update_obj = {"$set": update_filds}
+
+        result = await ProductsCollection.update_one(query_filter, update_obj)
+
+    
+        return 1
+
+
     except ValueError as e:
         return e.args[0]
 

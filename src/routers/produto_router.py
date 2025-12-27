@@ -28,6 +28,6 @@ async def cadastrarProduto(novoProduto: Produto):
 async def deletarProduto(id: str):
     return await service.deletarProduto(id)
 
-@routerProduto.put("/atualizar")
-async def atualizarProduto(update: ProdutoUpdate):
-    return await service.atualizarProduto(update)
+@routerProduto.put("/atualizar/{id}")
+async def atualizarProduto(id: str,update: ProdutoUpdate):
+    return await service.atualizarProduto(id,update)
