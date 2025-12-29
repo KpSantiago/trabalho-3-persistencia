@@ -4,8 +4,9 @@ from datetime import datetime;
 class Transacao(BaseModel):
     quantidade: int 
     data_transacao: datetime | None
-    # Fornecedor dono dessa transacao
-    # lista de produtos que ela possui
+    listaDosProdutos: list[str] # lista de string, pois essa lista ira armazenas os ID's dos produtos
+
+
 
 
 

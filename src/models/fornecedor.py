@@ -1,12 +1,12 @@
 from pydantic import BaseModel
+from models.transacao import Transacao
 
 class Fornecedor(BaseModel):
     cnpj: int
     nome: str
     contato: str
     endereco: str
-    # transacoesFornecedor - lista de transacoes dele
-    # produtosFornecedor - lista de produtos dele
+    transacoesFornecedor: list[Transacao] | None
 
 
 
