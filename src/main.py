@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from routers.produto_router import routerProduto
-# from routers.fornecedor_router import routerFornecedor
+# from routers.prodForn_router import routerProdForn
 # from routers.transacao_router import router as routerTransacao
 
 
@@ -29,5 +29,9 @@ app = FastAPI(
 
 
 app.include_router(routerProduto)
-# app.include_router(routerFornecedor)
 # app.include_router(routerTransacao)
+
+
+
+# Isso e apenas para testar os end-pois de ProdutoFornecedor, Essas rotas nao precisam estar na aplicacao final
+# app.include_router(routerProdForn)

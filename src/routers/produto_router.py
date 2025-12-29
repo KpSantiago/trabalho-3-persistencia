@@ -12,17 +12,13 @@ async def ProdutoPorNome(nome:str,limit:int,offset:int):
 async def ProdutosPorCategoria(categoria: str,limit:int,offset:int):
     return await service.produtosPorCategoria(categoria,limit,offset)
 
-@routerProduto.get("/fornecedoresDeProdutos/{id}")
-async def fornecedoresDeProdutos():
-    return await service.fornecedoresDeProdutos()
-
-@routerProduto.get("/produtosDataTransacoes")
-async def atualizarProduto():
-    return await service.ProdutosDataTransacoes()
-
 @routerProduto.post("/cadastrar")
 async def cadastrarProduto(novoProduto: Produto):
     return await service.cadastrarProduto(novoProduto)
+
+@routerProduto.post("/cadastrarMuitos")
+async def cadastrarMuitosProduto(listaNovosProdutos: list[Produto]):
+    return await service.cadastrarMuitosProduto(listaNovosProdutos)
 
 @routerProduto.delete("/deletar/{id}")
 async def deletarProduto(id: str):
@@ -31,3 +27,4 @@ async def deletarProduto(id: str):
 @routerProduto.put("/atualizar/{id}")
 async def atualizarProduto(id: str,update: ProdutoUpdate):
     return await service.atualizarProduto(id,update)
+

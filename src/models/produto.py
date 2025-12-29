@@ -6,7 +6,6 @@ from typing import Optional
 class Produto(BaseModel): 
     mercadoria: str
     valor: float
-    quantidade: int
     categoria: str
 
 class ProdutoUpdate(BaseModel):

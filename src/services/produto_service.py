@@ -6,6 +6,8 @@ from fastapi import FastAPI, HTTPException
 from bson import ObjectId
 
 
+
+
 async def produtosPorNome(nome,limit,offset):
     cursor = ProductsCollection.find({"mercadoria": nome}).skip(offset)
     produtosDocList = await cursor.to_list(limit)
@@ -36,6 +38,17 @@ async def cadastrarProduto(novoProduto: Produto):
         return "Nao foi possivel cadastrar o produto."
 
     return novoProduto
+
+
+async def cadastrarMuitosProduto(listaNovosProdutos: list[Produto]):
+
+    try:
+        listaMuitos = [dict(item) for item in listaNovosProdutos]
+        await ProductsCollection.insert_many(listaMuitos)
+    except:
+        return "Nao foi possivel cadastrar muitos produtos."
+
+    return "Muitos produtos cadastrados com sucesso"
 
 
 async def deletarProduto(id):
@@ -82,12 +95,7 @@ async def atualizarProduto(id,update: ProdutoUpdate):
         return e.args[0]
 
 
-# async def fornecedoresDeProdutos():
-#     print()
 
-
-# async def ProdutosDataTransacoes():
-#     print()
 
 
 
