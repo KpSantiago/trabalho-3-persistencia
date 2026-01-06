@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "asyncpg>=0.31.0",
+    "beanie[srv]>=2.0.1",
     "dotenv>=0.9.9",
     "fastapi[standard]>=0.121.2",
     "motor[srv]>=3.7.1",

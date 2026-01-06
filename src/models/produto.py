@@ -1,9 +1,18 @@
 from pydantic import BaseModel
-from bson import ObjectId
 from typing import Optional 
+import pymongo
+from beanie import Document
 
 
-class Produto(BaseModel): 
+class Produto(Document): 
+    mercadoria: str
+    valor: float
+    categoria: str
+
+    class Settings:
+        name = "produto"
+
+class ProdutoDto(BaseModel): 
     mercadoria: str
     valor: float
     categoria: str
@@ -11,7 +20,15 @@ class Produto(BaseModel):
 class ProdutoUpdate(BaseModel):
     mercadoria: Optional[str] = None
     valor: Optional[float] = None
-    quantidade: Optional[int] = None
     categoria: Optional[str] = None
     
+def produto_serializer(ProdutoDTO: dict) -> Produto:
+    produto = Produto(
+       mercadoria=ProdutoDTO.mercadoria,
+       valor=ProdutoDTO.valor,
+       categoria=ProdutoDTO.categoria)
 
+    return produto
+
+def produtoList_serializer(lista) -> list:
+    return [produto_serializer(item) for item in lista]

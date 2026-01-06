@@ -1,50 +1,49 @@
 
-from database.database import ProductsCollection
-from models.produto import Produto, ProdutoUpdate
-from deserializer.deserializer import produto_serializer, produtoList_serializer
-from fastapi import FastAPI, HTTPException
+from models.produto import Produto,ProdutoDto, ProdutoUpdate, produtoList_serializer
+from fastapi import HTTPException
 from bson import ObjectId
 
 
-
-
 async def produtosPorNome(nome,limit,offset):
-    cursor = ProductsCollection.find({"mercadoria": nome}).skip(offset)
-    produtosDocList = await cursor.to_list(limit)
+    try:
+        produtosLista = await Produto.find(Produto.mercadoria == nome).skip(offset).limit(limit).to_list()
 
-    if len(produtosDocList) == 0:
-        raise HTTPException(status_code=404, detail="Itens not found")
-    
-    produtosList = produtoList_serializer(produtosDocList)
+    except:
+        return "Nao foi possivel encontrar o produto."
 
-    return produtosList
+    return produtosLista
 
 
 async def produtosPorCategoria(categoria,limit,offset):
-    cursor = ProductsCollection.find({"categoria": categoria}).skip(offset)
-    produtosDocList = await cursor.to_list(limit)
-
-    if len(produtosDocList) == 0:
-        raise HTTPException(status_code=404, detail="Itens not found")
-
-    produtosList = produtoList_serializer(produtosDocList)
-    return produtosList
-
-
-async def cadastrarProduto(novoProduto: Produto):
     try:
-        await ProductsCollection.insert_one(dict(novoProduto))
+        produtosLista = await Produto.find(Produto.categoria == categoria).skip(offset).limit(limit).to_list()
+
     except:
+        return "Nao foi possivel encontrar o produto."
+
+    return produtosLista
+
+
+async def cadastrarProduto(novoProduto: ProdutoDto):
+   
+   try:
+       newP = Produto(
+       mercadoria=novoProduto.mercadoria,
+       valor=novoProduto.valor,
+       categoria=novoProduto.categoria)
+
+       await newP.insert()
+
+       return newP
+     
+   except:
         return "Nao foi possivel cadastrar o produto."
 
-    return novoProduto
 
-
-async def cadastrarMuitosProduto(listaNovosProdutos: list[Produto]):
-
+async def cadastrarMuitosProduto(listaNovosProdutosDTO: list[ProdutoDto]):
     try:
-        listaMuitos = [dict(item) for item in listaNovosProdutos]
-        await ProductsCollection.insert_many(listaMuitos)
+        ListaNovosProdutos = produtoList_serializer(listaNovosProdutosDTO)
+        await Produto.insert_many(ListaNovosProdutos)
     except:
         return "Nao foi possivel cadastrar muitos produtos."
 
@@ -53,11 +52,11 @@ async def cadastrarMuitosProduto(listaNovosProdutos: list[Produto]):
 
 async def deletarProduto(id):
     try:
-        query_filter = { "_id": ObjectId(id) }
-        result = await ProductsCollection.delete_one(query_filter)
-        
-        if(result.deleted_count != 0):
-            return "Elemento excluido com sucesso"
+        produto = await Produto.find_one(Produto.id == ObjectId(id))
+
+        if(produto):
+            await produto.delete()
+            return "Produto excluido com sucesso"
         
         raise ValueError("O produto nao existe.")
     
@@ -82,18 +81,20 @@ async def atualizarProduto(id,update: ProdutoUpdate):
                 del update_filds[key]
 
 
-        query_filter = { "_id": ObjectId(id) }
-        update_obj = {"$set": update_filds}
+        produto = await Produto.find_one(Produto.id == ObjectId(id))
+        await produto.set(update)
 
-        result = await ProductsCollection.update_one(query_filter, update_obj)
-
-    
-        return 1
+        return produto
 
 
     except ValueError as e:
-        return e.args[0]
+        if(len(e.args) != 0):
+            return e.args[0] 
+    
+        raise HTTPException(status_code=404, detail="Item not found")
 
+        
+        
 
 
 
