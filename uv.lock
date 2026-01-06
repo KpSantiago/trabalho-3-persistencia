@@ -429,7 +429,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "asyncpg", specifier = ">=0.31.0" },
-    { name = "beanie", specifier = ">=2.0.1" },
+    { name = "beanie", extras = ["srv"], specifier = ">=2.0.1" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.121.2" },
     { name = "motor", extras = ["srv"], specifier = ">=3.7.1" },

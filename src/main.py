@@ -1,5 +1,8 @@
 from fastapi import FastAPI
 from routers.produto_router import routerProduto
+from database.database import initDB
+from contextlib import asynccontextmanager
+
 # from routers.prodForn_router import routerProdForn
 # from routers.transacao_router import router as routerTransacao
 
@@ -19,14 +22,18 @@ tags_metadata = [
     },
 ]
 
-app = FastAPI(
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await initDB()
+    yield
+    
+
+app = FastAPI(lifespan=lifespan,
     title="Sistema de Estoque",
     openapi_tags=tags_metadata,
     description="API para gerenciar fornecedores, produtos e transações.",
     version="1.0.0",
 )
-
-
 
 app.include_router(routerProduto)
 # app.include_router(routerTransacao)

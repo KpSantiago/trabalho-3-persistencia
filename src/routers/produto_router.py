@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from services import produto_service as service
-from models.produto import Produto, ProdutoUpdate
+from models.produto import Produto,ProdutoDto, ProdutoUpdate
 
 routerProduto = APIRouter(prefix="/produto", tags=["Produto"])
 
@@ -13,11 +13,11 @@ async def ProdutosPorCategoria(categoria: str,limit:int,offset:int):
     return await service.produtosPorCategoria(categoria,limit,offset)
 
 @routerProduto.post("/cadastrar")
-async def cadastrarProduto(novoProduto: Produto):
+async def cadastrarProduto(novoProduto: ProdutoDto):
     return await service.cadastrarProduto(novoProduto)
 
 @routerProduto.post("/cadastrarMuitos")
-async def cadastrarMuitosProduto(listaNovosProdutos: list[Produto]):
+async def cadastrarMuitosProduto(listaNovosProdutos: list[ProdutoDto]):
     return await service.cadastrarMuitosProduto(listaNovosProdutos)
 
 @routerProduto.delete("/deletar/{id}")
