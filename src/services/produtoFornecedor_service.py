@@ -1,12 +1,12 @@
 
-from database.database import ProductsFornCollection
-from models.produtoFornecedor import ProdutoFornecedor, ProdutoFornecedorUpdate
-from bson import ObjectId
+from models.produtoFornecedor import ProdutoFornecedor, ProdutoFornecedorUpdate, ProdutoFornecedorDTO
+from beanie.odm.fields import PydanticObjectId
 
 
-async def cadastrarProdForn(novoProdForn: ProdutoFornecedor):
+async def cadastrarProdForn(novoProdForn: ProdutoFornecedorDTO):
     try:
-        await ProductsFornCollection.insert_one(dict(novoProdForn))
+        newProdForn = ProdutoFornecedor(produto_id=novoProdForn.produto_id,fornecedor_id=novoProdForn.fornecedor_id)
+        await newProdForn.insert()
     except:
         return "Nao foi possivel cadastrar a relacao."
 
@@ -15,10 +15,10 @@ async def cadastrarProdForn(novoProdForn: ProdutoFornecedor):
 
 async def deletarProdForn(id):
     try:
-        query_filter = { "_id": ObjectId(id) }
-        result = await ProductsFornCollection.delete_one(query_filter)
+        relacao = await ProdutoFornecedor.find_one(ProdutoFornecedor.id == id)
+
         
-        if(result.deleted_count != 0):
+        if(relacao):
             return "Relacao excluida com sucesso"
         
         raise ValueError("A relacao nao existe.")
@@ -27,7 +27,7 @@ async def deletarProdForn(id):
         return e.args[0]
 
 
-async def atualizarProdForn(id,update: ProdutoFornecedorUpdate):
+async def atualizarProdForn(id: PydanticObjectId,update: ProdutoFornecedorUpdate):
     try:
         i = 0
         chavesClasse = list(ProdutoFornecedorUpdate.model_fields.keys())
@@ -44,13 +44,11 @@ async def atualizarProdForn(id,update: ProdutoFornecedorUpdate):
                 del update_filds[key]
 
 
-        query_filter = { "_id": ObjectId(id) }
-        update_obj = {"$set": update_filds}
-
-        result = await ProductsFornCollection.update_one(query_filter, update_obj)
+        relacao = await ProdutoFornecedor.find_one(ProdutoFornecedor.id == id)
+        await relacao.set(update_filds)
 
     
-        return 1
+        return relacao
 
 
     except ValueError as e:

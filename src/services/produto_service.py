@@ -1,7 +1,7 @@
 
 from models.produto import Produto,ProdutoDto, ProdutoUpdate, produtoList_serializer
 from fastapi import HTTPException
-from bson import ObjectId
+from beanie.odm.fields import PydanticObjectId
 
 
 async def produtosPorNome(nome,limit,offset):
@@ -50,9 +50,9 @@ async def cadastrarMuitosProduto(listaNovosProdutosDTO: list[ProdutoDto]):
     return "Muitos produtos cadastrados com sucesso"
 
 
-async def deletarProduto(id):
+async def deletarProduto(id: PydanticObjectId):
     try:
-        produto = await Produto.find_one(Produto.id == ObjectId(id))
+        produto = await Produto.find_one(Produto.id == id)
 
         if(produto):
             await produto.delete()
@@ -81,8 +81,8 @@ async def atualizarProduto(id,update: ProdutoUpdate):
                 del update_filds[key]
 
 
-        produto = await Produto.find_one(Produto.id == ObjectId(id))
-        await produto.set(update)
+        produto = await Produto.find_one(Produto.id == id)
+        await produto.set(update_filds)
 
         return produto
 
