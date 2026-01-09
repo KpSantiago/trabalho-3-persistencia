@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from services import produto_service as service
-from models.produto import Produto,ProdutoDto, ProdutoUpdate
+from models.produto import ProdutoDto, ProdutoUpdate
+from beanie.odm.fields import PydanticObjectId
 
 routerProduto = APIRouter(prefix="/produto", tags=["Produto"])
 
@@ -21,10 +22,10 @@ async def cadastrarMuitosProduto(listaNovosProdutos: list[ProdutoDto]):
     return await service.cadastrarMuitosProduto(listaNovosProdutos)
 
 @routerProduto.delete("/deletar/{id}")
-async def deletarProduto(id: str):
+async def deletarProduto(id: PydanticObjectId):
     return await service.deletarProduto(id)
 
 @routerProduto.put("/atualizar/{id}")
-async def atualizarProduto(id: str,update: ProdutoUpdate):
+async def atualizarProduto(id: PydanticObjectId,update: ProdutoUpdate):
     return await service.atualizarProduto(id,update)
 

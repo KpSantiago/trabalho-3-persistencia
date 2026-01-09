@@ -1,6 +1,4 @@
-from pydantic import BaseModel
 from models.transacao import Transacao
-import pymongo
 from beanie import Document
 
 class Fornecedor(Document):

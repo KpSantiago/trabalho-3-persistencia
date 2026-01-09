@@ -2,9 +2,7 @@ from fastapi import FastAPI
 from routers.produto_router import routerProduto
 from database.database import initDB
 from contextlib import asynccontextmanager
-
-# from routers.prodForn_router import routerProdForn
-# from routers.transacao_router import router as routerTransacao
+from routers.prodForn_router import routerProdForn
 
 
 tags_metadata = [
@@ -36,9 +34,5 @@ app = FastAPI(lifespan=lifespan,
 )
 
 app.include_router(routerProduto)
+app.include_router(routerProdForn)
 # app.include_router(routerTransacao)
-
-
-
-# Isso e apenas para testar os end-pois de ProdutoFornecedor, Essas rotas nao precisam estar na aplicacao final
-# app.include_router(routerProdForn)
