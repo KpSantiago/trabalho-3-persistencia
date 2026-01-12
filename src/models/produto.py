@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from beanie import Document
 
 
@@ -15,16 +15,21 @@ class ProdutoDto(BaseModel):
     valor: float
     categoria: str
 
+    model_config = ConfigDict(extra="forbid")
+
 class ProdutoUpdate(BaseModel):
     mercadoria: str | None = None
     valor: float | None = None
     categoria: str | None = None
+
+    model_config = ConfigDict(extra="forbid")
+
     
 def produto_serializer(ProdutoDTO: dict) -> Produto:
     produto = Produto(
-       mercadoria=ProdutoDTO.mercadoria,
-       valor=ProdutoDTO.valor,
-       categoria=ProdutoDTO.categoria)
+       mercadoria=ProdutoDTO["mercadoria"],
+       valor=ProdutoDTO["valor"],
+       categoria=ProdutoDTO["categoria"])
 
     return produto
 
