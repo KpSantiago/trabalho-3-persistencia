@@ -9,8 +9,10 @@ dependencies = [
     "beanie[srv]>=2.0.1",
     "dotenv>=0.9.9",
     "fastapi[standard]>=0.121.2",
+    "httpx>=0.28.1",
     "motor[srv]>=3.7.1",
     "psycopg2-binary>=2.9.11",
     "pydantic>=2.12.4",
     "pymongo[srv]>=4.15.5",
+    "pytest>=9.0.2",
 ]
