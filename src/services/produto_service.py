@@ -1,7 +1,7 @@
 import logging
 from models.produto import Produto,ProdutoDto, ProdutoUpdate, produtoList_serializer
 from fastapi import HTTPException
-from beanie.odm.fields import PydanticObjectId
+from beaniegit .odm.fields import PydanticObjectId
 
 logger = logging.getLogger(__name__)
 
