@@ -1,4 +1,10 @@
+from datetime import datetime
+from urllib.request import Request
+
 from fastapi import FastAPI
+from starlette.responses import JSONResponse
+
+from exceptions.business_exception import BusinessException
 from routers.produto_router import routerProduto
 from database.database import initDB
 from contextlib import asynccontextmanager
@@ -32,6 +38,15 @@ app = FastAPI(lifespan=lifespan,
     description="API para gerenciar fornecedores, produtos e transações.",
     version="1.0.0",
 )
+
+@app.exception_handler(BusinessException)
+async def business_exception_handler(request: Request, exc: BusinessException):
+    return JSONResponse({
+        "status_code": exc.status_code,
+        "message": exc.message,
+        "timestamp": datetime.now().isoformat(),
+        "api_path": request.get_full_url()
+    })
 
 app.include_router(routerProduto)
 app.include_router(routerProdForn)
