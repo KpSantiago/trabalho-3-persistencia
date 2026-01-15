@@ -1,11 +1,11 @@
 import logging
 
+from beanie.odm.fields import PydanticObjectId
+
 from exceptions.bad_request_exception import BadRequestException
 from exceptions.business_exception import BusinessException
 from exceptions.not_found_exception import NotFoundException
 from models.produto import Produto, ProdutoDto, ProdutoUpdate, produtoList_serializer
-from fastapi import HTTPException
-from beanie.odm.fields import PydanticObjectId
 
 logger = logging.getLogger(__name__)
 
