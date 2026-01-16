@@ -1,238 +1,143 @@
-from database.database import AsyncSessionLocal
-
-from sqlmodel import select, delete
-from sqlalchemy.orm import selectinload
-
-from models.transacao import Transacao
-from models.ProdutoTransacaoFornecedor import ProdutoTransacaoFornecedor
-from models.produto import Produto
-
-from dtos.transacaoRespostaDTO import TransacaoRespostaDTO, TransacaoProdutoRespostaDTO, TransacaoFornecedorRespostaDTO
-from dtos.pagination import Pagination
-from dtos.createTransacaoDTO import CreateTransacaoDTO
-from dtos.updateTransacaoDTO import UpdateTransacaoDTO
-
-from datetime import datetime
-
-from fastapi import HTTPException
-
 import logging
 
-logging.basicConfig()
-logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
+from beanie.odm.fields import PydanticObjectId
+
+from exceptions.bad_request_exception import BadRequestException
+from exceptions.business_exception import BusinessException
+from exceptions.not_found_exception import NotFoundException
+from models.transacao import Transacao
+from models.fornecedor import Fornecedor
+
+logger = logging.getLogger(__name__)
+
 
 async def resgatarTodas(
-    offset: int,
-    limit: int,
-    data_inicial: datetime | None,
-    data_final: datetime | None
-) -> Pagination[TransacaoRespostaDTO] | str:
-    if data_inicial and data_final and data_inicial > data_final:
-        return HTTPException(400, "Data inicial não pode ser maior que a data final.")
-    
-    async with AsyncSessionLocal() as session:
-        try:
-            statement = select(Transacao)
-            if data_inicial and data_final:
-                statement = statement.where(
-                    Transacao.data_transacao.between(data_inicial, data_final)
-                )
-            
-            statement = (
-                statement.offset(offset)
-                .limit(limit)
-                .options(selectinload(Transacao.itens)
-                         .selectinload(ProdutoTransacaoFornecedor.produto),
-                         selectinload(Transacao.itens)
-                         .selectinload(ProdutoTransacaoFornecedor.fornecedor))
-            )
+        fornecedor_id: PydanticObjectId,
+        offset: int,
+        limit: int
+):
+    try:
+        fornecedor = await Fornecedor.find_one({'_id': fornecedor_id})
 
-            resultados = await session.exec(statement)
-            listaTransacoes = resultados.all()
+        if not fornecedor:
+            raise NotFoundException("Não existe fornecedor com esse respectivo ID.")
+
+        skip = (offset - 1) * limit
+        return fornecedor.transacoesFornecedor[skip:(skip + limit)]
+
+    except BusinessException as e:
+        raise e
+
+    except Exception as e:
+        logger.error(
+            "Erro ao acessar transações",
+            exc_info=True
+        )
+        raise Exception("Erro interno ao acessar transações.")
 
 
-            todasTransacoes = await session.exec(select(Transacao))
-            count = len(todasTransacoes.all())
+async def resgatarUm(fornecedor_id: PydanticObjectId, transacao_id: PydanticObjectId):
+    try:
+        fornecedor = await Fornecedor.find_one({'_id': fornecedor_id})
 
-            resp = Pagination()
-            resp.__populate__(offset // limit + 1, limit, count)
+        if not fornecedor:
+            raise NotFoundException("Não existe fornecedor com esse respectivo ID.")
 
-            for t in listaTransacoes:
-                transacao = TransacaoRespostaDTO(
-                    transacao_id=t.transacao_id,
-                    quantidade=t.quantidade,
-                    data_transacao=t.data_transacao,
-                    valor_total=0,
-                    produtos=[],
-                    fornecedores=[]
-                )
+        transacao = next((t for t in fornecedor.transacoesFornecedor if t.id == transacao_id), None)
 
-                for item in t.itens:
-                    transacao.produtos.append(TransacaoProdutoRespostaDTO(
-                        produto_id=getattr(item.produto, "idProd", None),
-                        mercadoria=getattr(item.produto, "mercadoria", None),
-                        categoria=getattr(item.produto, "categoria", None),
-                        valor=getattr(item, "valor", None)
-                    ))
-                    
-                    transacao.valor_total = item.valor * item.quantidade
-                    
-                    transacao.fornecedores.append(TransacaoFornecedorRespostaDTO(
-                        fornecedor_id=getattr(item.fornecedor, "idForn", None),
-                        nome=getattr(item.fornecedor, "nome", None),
-                        cnpj=getattr(item.fornecedor, "cnpj", None),
-                    ))
+        if not transacao:
+            raise NotFoundException("Não existe Transação com esse respectivo ID.")
 
-                resp.content.append(transacao)
+        return transacao
 
-            return resp
+    except BusinessException as e:
+        raise e
 
-        except Exception as e:
-            await session.rollback()
-            return f"Error: {e}"
+    except Exception as e:
+        logger.error(
+            "Erro ao acessar transações",
+            exc_info=True
+        )
+        raise Exception("Erro interno ao acessar transações.")
 
-async def resgatarUm(id: int) -> TransacaoRespostaDTO | str:
- async with AsyncSessionLocal() as session:
-        try:
-            statement = (
-                select(Transacao)
-                .options(
-                selectinload(Transacao.itens).selectinload(ProdutoTransacaoFornecedor.produto),
-                selectinload(Transacao.itens).selectinload(ProdutoTransacaoFornecedor.fornecedor)
-                )
-                .where(Transacao.transacao_id == id)
-            )
 
-            result = await session.exec(statement)
-            transacao = result.first()
+async def criar(fornecedor_id: PydanticObjectId, transacao: Transacao):
+    try:
+        fornecedor = await Fornecedor.find_one({'_id': fornecedor_id})
 
-            if not transacao:
-                return HTTPException(404, "Transação não encontrada.")
+        if not fornecedor:
+            raise NotFoundException("Não existe fornecedor com esse respectivo ID.")
 
-            resp = TransacaoRespostaDTO(
-                transacao_id=transacao.transacao_id,
-                quantidade=transacao.quantidade,
-                data_transacao=transacao.data_transacao,
-                valor_total=0,
-                produtos=[],
-                fornecedores=[]
-            )
-            
-            for item in transacao.itens:
-                resp.produtos.append(TransacaoProdutoRespostaDTO(
-                    produto_id=getattr(item.produto, "idProd", None) if item.produto else None,
-                    mercadoria=getattr(item.produto, "mercadoria", None) if item.produto else None,
-                    categoria=getattr(item.produto, "categoria", None) if item.produto else None,
-                    valor=item.valor
-                ))
-                
-                if item.valor and item.quantidade:
-                    resp.valor_total += item.valor * item.quantidade
-                
-                if item.fornecedor:
-                    resp.fornecedores.append(TransacaoFornecedorRespostaDTO(
-                        fornecedor_id=getattr(item.fornecedor, "idForn", None),
-                        nome=getattr(item.fornecedor, "nome", None),
-                        cnpj=getattr(item.fornecedor, "cnpj", None)
-                    ))
-                
-            return resp
-        except Exception as e:
-            await session.rollback()
-            return(f"Error: {e}")
-        
-async def criar(transacao: CreateTransacaoDTO) -> str:
-    async with AsyncSessionLocal() as session:
-        try:
-            nova_transacao = Transacao()
-            nova_transacao.quantidade = sum(item.quantidade for item in transacao.itens if item.quantidade)
-            nova_transacao.data_transacao = datetime.now()
-            
-            session.add(nova_transacao)
-            await session.flush()
-            
-            for item in transacao.itens:
-                p = await session.get(Produto, item.produto_id)
-                
-                p_t_f = ProdutoTransacaoFornecedor(
-                    produto_id=item.produto_id,
-                    fornecedor_id=item.fornecedor_id,
-                    transacao_id=nova_transacao.transacao_id,
-                    quantidade=item.quantidade,
-                    valor=p.valor if p else 0.0
-                )
-                
-                p.quantidade += item.quantidade
-                await session.flush()
-                
-                session.add(p_t_f)
-                
-            await session.commit()
-            
-            return "Transação criada com sucesso!"
-        except Exception as e:
-            await session.rollback()
-            return(f"Error: {e}")
-        
-async def atualizar(id: int, transacao: UpdateTransacaoDTO) -> str:
-    async with AsyncSessionLocal() as session:
-        try:
-            transacao_existente = await session.get(Transacao, id)
+        if not fornecedor.transacoesFornecedor:
+            fornecedor.transacoesFornecedor = []
 
-            if not transacao_existente:
-                return HTTPException(404, "Transação não encontrada.")
-            
-            if len(transacao.itens) > 0:
-                transacao_existente.quantidade = sum(item.quantidade for item in transacao.itens if item.quantidade)    
-                
-                await session.execute(
-                    delete(ProdutoTransacaoFornecedor).where(
-                        ProdutoTransacaoFornecedor.transacao_id == transacao_existente.transacao_id
-                    )
-                )
-                await session.flush()
-                
-                for item in transacao.itens:
-                    p = await session.get(Produto, item.produto_id)
-                    
-                    p_t_f = ProdutoTransacaoFornecedor(
-                        produto_id=item.produto_id,
-                        fornecedor_id=item.fornecedor_id,
-                        transacao_id=id,
-                        quantidade=item.quantidade,
-                        valor=p.valor if p else 0.0
-                    )
-                    
-                    p.quantidade += item.quantidade
-                    await session.flush()
-                    
-                    session.add(p_t_f)
-                
-            if transacao.data_transacao:
-                transacao_existente.data_transacao = transacao.data_transacao
-            
-            session.add(transacao_existente)
-            await session.commit()
-            
-            return "Transacao atualizada com sucesso."
-        except Exception as e:
-            await session.rollback()
-            return(f"Error: {e}")
-        
-async def deletar(id: int) -> str:
-    async with AsyncSessionLocal() as session:
-        try:
-            transacao_existente = await session.get(Transacao, id)
-            
-            if not transacao_existente:
-                return HTTPException(404, "Transação não encontrada.")
-            
-            statement = delete(Transacao).where(Transacao.transacao_id == id)
-            
-            await session.exec(statement)
-            await session.commit()
-            
-            return "Transação deletada com sucesso."
-        except Exception as e:
-            await session.rollback()
-            return(f"Error: {e}")
+        fornecedor.transacoesFornecedor.append(transacao)
+        await fornecedor.save()
+
+    except BusinessException as e:
+        raise e
+
+    except Exception as e:
+        logger.error(
+            "Erro ao criar uma transação",
+            exc_info=True
+        )
+        raise Exception("Erro interno ao criar transação.")
+
+
+async def atualizar(fornecedor_id: PydanticObjectId, transacao_id: PydanticObjectId, transacao: Transacao):
+    try:
+        fornecedor = await Fornecedor.find_one({'_id': fornecedor_id})
+
+        if not fornecedor:
+            raise NotFoundException("Não existe fornecedor com esse respectivo ID.")
+
+        t = next((t for t in fornecedor.transacoesFornecedor if t.id == transacao_id), None)
+
+        if not t:
+            raise NotFoundException("Não existe transação com esse respectivo ID.")
+
+        if not transacao.data_transacao or transacao.quantidade == 0 or not transacao.listaDosProdutos or len(transacao.listaDosProdutos) == 0:
+            raise BadRequestException("Objeto de atualização incorreto")
+
+        t.data_transacao = transacao.data_transacao
+        t.quantidade = transacao.quantidade
+        t.listaDosProdutos = transacao.listaDosProdutos
+
+        await fornecedor.save()
+
+    except BusinessException as e:
+        raise e
+
+    except Exception as e:
+        logger.error(
+            "Erro ao atualizar uma transação",
+            exc_info=True
+        )
+        raise Exception("Erro interno ao atualizar transação.")
+
+
+async def deletar(fornecedor_id: PydanticObjectId, transacao_id: PydanticObjectId):
+    try:
+        fornecedor = await Fornecedor.find_one({'_id': fornecedor_id})
+
+        if not fornecedor:
+            raise NotFoundException("Não existe fornecedor com esse respectivo ID.")
+
+        transacao = next((t for t in fornecedor.transacoesFornecedor if t.id == transacao_id), None)
+
+        if not transacao:
+            raise NotFoundException("Não existe Transação com esse respectivo ID.")
+
+        fornecedor.transacoesFornecedor.remove(transacao)
+        await fornecedor.save()
+
+    except BusinessException as e:
+        raise e
+
+    except Exception as e:
+        logger.error(
+            "Erro ao deletar uma transação",
+            exc_info=True
+        )
+        raise Exception("Erro interno ao deletar transação.")

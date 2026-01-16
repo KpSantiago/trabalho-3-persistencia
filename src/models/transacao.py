@@ -1,21 +1,19 @@
-from datetime import datetime;
-from models.produto import Produto
-from beanie import Document
+from pydantic import Field
+from datetime import datetime
 
-class Transacao(Document):
-    quantidade: int 
+from beanie import PydanticObjectId
+from pydantic import BaseModel
+
+from models.produto import ProdutoDto
+
+
+class Transacao(BaseModel):
+    _id: PydanticObjectId = Field(default_factory=PydanticObjectId)
+    quantidade: int
     data_transacao: datetime | None
-    listaDosProdutos: list[Produto] 
+    listaDosProdutos: list[ProdutoDto]
 
-    class Settings:
-        name = "transacao"
-
-
-
-
-
-
-
-
-
+    @property
+    def id(self):
+        return self._id
 

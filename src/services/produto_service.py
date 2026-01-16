@@ -1,28 +1,27 @@
 import logging
-from models.produto import Produto,ProdutoDto, ProdutoUpdate, produtoList_serializer
-from fastapi import HTTPException
-from beaniegit.odm.fields import PydanticObjectId
+
+from beanie.odm.fields import PydanticObjectId
+
+from exceptions.bad_request_exception import BadRequestException
+from exceptions.business_exception import BusinessException
+from exceptions.not_found_exception import NotFoundException
+from models.produto import Produto, ProdutoDto, ProdutoUpdate, produtoList_serializer
 
 logger = logging.getLogger(__name__)
 
-async def produtosPorNome(nome,limit,offset):
+
+async def produtosPorNome(nome, limit, offset):
     try:
         produtosLista = await Produto.find(Produto.mercadoria == nome).skip(offset).limit(limit).to_list()
 
-        if not len(produtosLista):
-            raise HTTPException(404, "Nada encontrado")
-        
-    except HTTPException:
-        raise
-
+        return produtosLista
     except Exception:
         logger.error(
-        "Erro ao acessar produtos",
-        exc_info=True
+            "Erro ao acessar produtos",
+            exc_info=True
         )
-        raise HTTPException(status_code=500, detail="Erro interno ao acessar produtos.")
+        raise Exception("Erro interno ao acessar produtos.")
 
-    return produtosLista
 
 async def produtosPorNomeParcial(mercadoria):
     try:
@@ -30,77 +29,72 @@ async def produtosPorNomeParcial(mercadoria):
             {
                 "$project": {"_id": 0}
             },
-                {
-                    "$match": {"mercadoria":{"$regex": mercadoria,"$options": "i"}}
-                }
+            {
+                "$match": {"mercadoria": {"$regex": mercadoria, "$options": "i"}}
+            }
         ]
 
-        response = await Produto.aggregate(pipeLine).to_list()
+        return await Produto.aggregate(pipeLine).to_list()
     except Exception:
         logger.error(
-        "Erro ao acessar produtos",
-        exc_info=True
+            "Erro ao acessar produtos",
+            exc_info=True
         )
-        raise HTTPException(status_code=500, detail="Erro interno ao acessar produtos.")
+        raise Exception("Erro interno ao acessar produtos.")
 
-    return response
 
-async def produtosPorCategoria(categoria,limit,offset):
+async def produtosPorCategoria(categoria, limit, offset):
     try:
         produtosLista = await Produto.find(Produto.categoria == categoria).skip(offset).limit(limit).to_list()
 
-        if len(produtosLista) == 0:
-            raise HTTPException(404, "Nada encontrado")
-        
-    except HTTPException:
-        raise
+        return produtosLista
 
     except Exception:
         logger.error(
-        "Erro ao acessar produtos",
-        exc_info=True
+            "Erro ao acessar produtos",
+            exc_info=True
         )
-        raise HTTPException(status_code=500, detail="Erro interno ao acessar produtos.")
+        raise Exception("Erro interno ao acessar produtos.")
 
-    return produtosLista
 
 async def produtosQuantidade():
     try:
         qtdProdutos = await Produto.count()
+
+        return qtdProdutos
     except Exception:
         logger.error(
-        "Erro ao acessar produtos",
-        exc_info=True
+            "Erro ao acessar produtos",
+            exc_info=True
         )
-        raise HTTPException(status_code=500, detail="Erro interno ao acessar produtos.")
+        raise Exception("Erro interno ao acessar produtos.")
 
-    return qtdProdutos
 
 async def totalVendasDaCategoria(categoria):
     try:
         pipeLine = [
-                {
-                    "$match": {"categoria":{"$regex": categoria,"$options": "i"}}
-                },
-                
-                {
-                    "$group": {
-                        "_id": "$categoria",
-                        "totalVendas": {"$sum": "$valor"}
-                    }
+            {
+                "$match": {"categoria": {"$regex": categoria, "$options": "i"}}
+            },
+
+            {
+                "$group": {
+                    "_id": "$categoria",
+                    "totalVendas": {"$sum": "$valor"}
                 }
+            }
         ]
-        response = await Produto.aggregate(pipeLine).to_list()
+
+        return await Produto.aggregate(pipeLine).to_list()
     except Exception:
         logger.error(
-        "Erro ao acessar produtos",
-        exc_info=True
+            "Erro ao acessar produtos",
+            exc_info=True
         )
-        raise HTTPException(status_code=500, detail="Erro interno ao acessar produtos.")
+        raise Exception("Erro interno ao acessar produtos.")
 
-    return response
 
-async def produtosMaisCaros(typeSort,limit,offset):
+async def produtosMaisCaros(typeSort, limit, offset):
     try:
         pipeLine = [
             {
@@ -109,7 +103,7 @@ async def produtosMaisCaros(typeSort,limit,offset):
             {
                 "$sort": {
                     "valor": typeSort
-       
+
                 }
             },
             {
@@ -119,137 +113,94 @@ async def produtosMaisCaros(typeSort,limit,offset):
                 "$skip": offset
             }
         ]
-        response = await Produto.aggregate(pipeLine).to_list()
+
+        return await Produto.aggregate(pipeLine).to_list()
     except Exception:
         logger.error(
-        "Erro ao acessar produtos",
-        exc_info=True
+            "Erro ao acessar produtos",
+            exc_info=True
         )
-        raise HTTPException(status_code=500, detail="Erro interno ao acessar produtos.")
+        raise Exception("Erro interno ao acessar produtos.")
 
-    return response
 
 async def cadastrarProduto(novoProduto: ProdutoDto):
-   try:
-       newP = Produto(
-       mercadoria=novoProduto.mercadoria,
-       valor=novoProduto.valor,
-       categoria=novoProduto.categoria)
-       await newP.insert()
+    try:
+        newP = Produto(
+            mercadoria=novoProduto.mercadoria,
+            valor=novoProduto.valor,
+            categoria=novoProduto.categoria)
+        await newP.insert()
 
-       return newP
-     
-   except Exception:
+        return newP
+
+    except Exception:
         logger.error(
-        "Erro ao cadastra produto.",
-        exc_info=True
+            "Erro ao cadastra produto.",
+            exc_info=True
         )
-        raise HTTPException(status_code=500, detail="Erro interno ao cadastrar produto.")      
+        raise Exception("Erro interno ao cadastrar produto.")
+
 
 async def cadastrarMuitosProduto(listaNovosProdutosDTO: list[ProdutoDto]):
     try:
         ListaNovosProdutos = produtoList_serializer(listaNovosProdutosDTO)
         await Produto.insert_many(ListaNovosProdutos)
 
+        return listaNovosProdutosDTO
     except Exception:
         logger.error(
-        "Erro ao cadastrar muitos produtos",
-        exc_info=True
+            "Erro ao cadastrar muitos produtos",
+            exc_info=True
         )
-        raise HTTPException(status_code=500, detail="Erro interno ao cadastrar muitos produtos.")
+        raise Exception("Erro interno ao cadastrar muitos produtos.")
 
-    return ListaNovosProdutos
 
 async def deletarProduto(id: PydanticObjectId):
     try:
         produto = await Produto.find_one(Produto.id == id)
 
-        if(produto):
+        if (produto):
             await produto.delete()
             return "Produto excluido com sucesso"
-        
+
         if not produto:
-            raise HTTPException(404, "Produto inexistente")
-        
-    except HTTPException:
-        raise
-    
+            raise NotFoundException("Produto inexistente")
+
+    except BusinessException as e:
+        raise e
+
     except Exception:
         logger.error(
-        "Erro ao deletar produto",
-        exc_info=True
+            "Erro ao deletar produto",
+            exc_info=True
         )
-        raise HTTPException(status_code=500, detail="Erro interno ao deletera produto.")
+        raise Exception("Erro interno ao deletera produto.")
 
-async def atualizarProduto(id,update: ProdutoUpdate):
-    
+
+async def atualizarProduto(id, update: ProdutoUpdate):
     try:
         if update.categoria is None and update.mercadoria is None and update.valor is None:
-            raise HTTPException(status_code=400, detail="Modelo de requisiçao invalido.")
-        
+            raise BadRequestException("Modelo de requisiçao invalido.")
+
         chavesRequest = dict(update).keys()
 
         update_filds = dict(update)
         for key in chavesRequest:
-            if(update_filds[key] == None):
+            if (update_filds[key] == None):
                 del update_filds[key]
-
 
         produto = await Produto.find_one(Produto.id == id)
         await produto.set(update_filds)
 
         return produto
 
-    except HTTPException:
-        raise
+    except BusinessException as e:
+        raise e
 
     except Exception:
         logger.error(
-        "Erro ao atualizar produto",
-        exc_info=True
+            "Erro ao atualizar produto",
+            exc_info=True
         )
-    
-        raise HTTPException(status_code=500, detail="Erro interno ao atualizar produto.")
 
-        
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
+        raise Exception("Erro interno ao atualizar produto.")
