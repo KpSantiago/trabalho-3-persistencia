@@ -27,8 +27,8 @@ async def totalVendasDaCategoria(categoria):
 
 
 @routerProduto.get("/produtosMaisCaros/{typeSort}/{limit}/{offset}")
-async def produtosPorPreco(typeSort: int,limit: int,offset: int):
-    return await service.produtosPorPreco(typeSort,limit,offset)
+async def produtosMaisCaros(typeSort: int,limit: int,offset: int):
+    return await service.produtosMaisCaros(typeSort,limit,offset)
 
 @routerProduto.post("/cadastrar")
 async def cadastrarProduto(novoProduto: ProdutoDto):
