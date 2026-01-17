@@ -24,8 +24,6 @@ async def resgatarTodas(
     try:
         skip = (offset - 1) * limit
 
-        # fornecedor: Fornecedor | None = None
-
         if data_inicial and not data_final:
             transacao = await Fornecedor.aggregate([
                 {'$match': {'_id': fornecedor_id}},

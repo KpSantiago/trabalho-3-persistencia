@@ -18,10 +18,10 @@ async def resgatarTodas(offset: int, limit: int):
 
     except Exception as e:
         logger.error(
-            "Erro ao acessar transações",
+            "Erro ao acessar as relações",
             exc_info=True
         )
-        raise Exception("Erro interno ao acessar transações.")
+        raise Exception("Erro interno ao acessar as relações entre produtos e fornecedores.")
 
 
 async def resgatarUma(id: PydanticObjectId):
@@ -38,10 +38,10 @@ async def resgatarUma(id: PydanticObjectId):
 
     except Exception as e:
         logger.error(
-            "Erro ao acessar transações",
+            "Erro ao acessar as relações",
             exc_info=True
         )
-        raise Exception("Erro interno ao acessar transações.")
+        raise Exception("Erro interno as relações entre produtos e fornecedores.")
 
 
 async def cadastrarProdForn(novoProdForn: ProdutoFornecedorDTO):
