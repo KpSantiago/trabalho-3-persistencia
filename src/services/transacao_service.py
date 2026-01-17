@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from uuid import UUID
 
 from beanie.odm.fields import PydanticObjectId
 
@@ -24,44 +24,113 @@ async def resgatarTodas(
     try:
         skip = (offset - 1) * limit
 
-        fornecedor: Fornecedor | None = None
+        # fornecedor: Fornecedor | None = None
 
         if data_inicial and not data_final:
-            fornecedor = await Fornecedor.find_one({
-                '_id': fornecedor_id,
-                'transacoesFornecedor': {
-                    'data_transacao': {'$gte': data_inicial}
+            transacao = await Fornecedor.aggregate([
+                {'$match': {'_id': fornecedor_id}},
+                {
+                    '$project': {
+                        '_id': 0,
+                        'transacoesFornecedor': {
+                            '$slice': [
+                                {
+                                    '$filter': {
+                                        'input': '$transacoesFornecedor',
+                                        'as': 't',
+                                        'cond': {'$gte': ['$$t.data_transacao', data_inicial]}
+                                    },
+                                },
+                                skip,
+                                limit
+                            ]
+                        }
+                    }
                 }
-            })
+            ]).to_list()
 
-            return fornecedor.transacoesFornecedor[skip:(skip + limit)]
+            if not transacao:
+                raise NotFoundException("Não foi encontrar o respectivo fornecedor.")
+
+            return transacao[0]['transacoesFornecedor']
 
         if not data_inicial and data_final:
-            fornecedor = await Fornecedor.find_one({
-                '_id': fornecedor_id,
-                'transacoesFornecedor': {
-                    'data_transacao': {'$lte': data_inicial}
+            transacao = await Fornecedor.aggregate([
+                {'$match': {'_id': fornecedor_id}},
+                {
+                    '$project': {
+                        '_id': 0,
+                        'transacoesFornecedor': {
+                            '$slice': [
+                                {
+                                    '$filter': {
+                                        'input': '$transacoesFornecedor',
+                                        'as': 't',
+                                        'cond': {'$lte': ['$$t.data_transacao', data_final]}
+                                    },
+                                },
+                                skip,
+                                limit
+                            ]
+                        }
+                    }
                 }
-            })
+            ]).to_list()
 
-            return fornecedor.transacoesFornecedor[skip:(skip + limit)]
+            if not transacao:
+                raise NotFoundException("Não foi encontrar o respectivo fornecedor.")
+
+            return transacao[0]['transacoesFornecedor']
 
         if data_inicial and data_final:
-            fornecedor = await Fornecedor.find_one({
-                '_id': fornecedor_id,
-                'transacoesFornecedor': {
-                    'data_transacao': {'$in': [data_inicial, data_final]}
+            transacao = await Fornecedor.aggregate([
+                {'$match': {'_id': fornecedor_id}},
+                {
+                    '$project': {
+                        '_id': 0,
+                        'transacoesFornecedor': {
+                            '$slice': [
+                                {
+                                    '$filter': {
+                                        'input': '$transacoesFornecedor',
+                                        'as': 't',
+                                        'cond': {
+                                            '$and': [
+                                                {'$gte': ['$$t.data_transacao', data_inicial]},
+                                                {'$lte': ['$$t.data_transacao', data_final]}
+                                            ]
+                                        }
+                                    },
+                                },
+                                skip,
+                                limit
+                            ]
+                        }
+                    }
                 }
-            })
+            ]).to_list()
 
-            return fornecedor.transacoesFornecedor[skip:(skip + limit)]
+            if not transacao:
+                raise NotFoundException("Não foi encontrar o respectivo fornecedor.")
 
-        fornecedor = await Fornecedor.find_one({'_id': fornecedor_id})
+            return transacao[0]['transacoesFornecedor']
+
+        fornecedor = await Fornecedor.aggregate([
+            {'$match': {'_id': fornecedor_id}},
+            {
+                '$project': {
+                    '_id': 0,
+                    'transacoesFornecedor': {
+                        '$slice': ['$transacoesFornecedor', skip, limit]
+                    }
+                }
+            }
+        ]).to_list()
 
         if not fornecedor:
             raise NotFoundException("Não existe fornecedor com esse respectivo ID.")
 
-        return fornecedor.transacoesFornecedor[skip:(skip + limit)]
+        return fornecedor[0]['transacoesFornecedor']
 
     except BusinessException as e:
         raise e
@@ -74,19 +143,29 @@ async def resgatarTodas(
         raise Exception("Erro interno ao acessar transações.")
 
 
-async def resgatarUm(fornecedor_id: PydanticObjectId, transacao_id: PydanticObjectId):
+async def resgatarUm(fornecedor_id: PydanticObjectId, transacao_id: str):
     try:
-        fornecedor = await Fornecedor.find_one({
-            '_id': fornecedor_id,
-            'transacoesFornecedor': {
-                'id': transacao_id
+        fornecedor = await Fornecedor.aggregate([
+            {'$match': {'_id': fornecedor_id}},
+            {
+                '$project': {
+                    'transacoesFornecedor': {
+                        '$filter': {
+                            'input': '$transacoesFornecedor',
+                            'as': 't',
+                            'cond': {
+                                '$eq': ['$$t.id', transacao_id]
+                            }
+                        }
+                    }
+                }
             }
-        })
+        ]).to_list()
 
         if not fornecedor:
             raise NotFoundException("Não existe fornecedor ou transação com esses respectivos ID's.")
 
-        return fornecedor.transacoesFornecedor
+        return fornecedor[0]['transacoesFornecedor']
 
     except BusinessException as e:
         raise e
@@ -101,17 +180,24 @@ async def resgatarUm(fornecedor_id: PydanticObjectId, transacao_id: PydanticObje
 
 async def criar(fornecedor_id: PydanticObjectId, transacao: Transacao):
     try:
-        fornecedor = await Fornecedor.find_one({'_id': fornecedor_id})
+        fornecedor = await Fornecedor.aggregate([
+            {'$match': {'_id': fornecedor_id}},
+            {'$project': {
+                '_id': 1,
+                'nome': 1,
+                'cnpj': 1,
+                'contato': 1,
+                'endereco': 1,
+                'transacoesFornecedor': {
+                    '$slice': ['$transacoesFornecedor', 1, 1]
+                }
+            }}
+        ]).to_list()
 
         if not fornecedor:
             raise NotFoundException("Não existe fornecedor com esse respectivo ID.")
 
-        if not fornecedor.transacoesFornecedor:
-            fornecedor.transacoesFornecedor = []
-
-        fornecedor.transacoesFornecedor.append(transacao)
-        await fornecedor.save()
-
+        await Fornecedor.update(Fornecedor(**fornecedor[0]), {'$push': {'transacoesFornecedor': transacao}})
     except BusinessException as e:
         raise e
 
@@ -123,29 +209,40 @@ async def criar(fornecedor_id: PydanticObjectId, transacao: Transacao):
         raise Exception("Erro interno ao criar transação.")
 
 
-async def atualizar(fornecedor_id: PydanticObjectId, transacao_id: PydanticObjectId, transacao: Transacao):
+async def atualizar(fornecedor_id: PydanticObjectId, transacao_id: str, transacao: Transacao):
     try:
-        fornecedor = await Fornecedor.find_one({
-            '_id': fornecedor_id,
-            'transacoesFornecedor': {
-                'id': transacao_id
-            }
-        })
+        fornecedor = await Fornecedor.aggregate([
+            {'$match': {'_id': fornecedor_id}},
+            {'$project': {
+                '_id': 1,
+                'nome': 1,
+                'cnpj': 1,
+                'contato': 1,
+                'endereco': 1,
+                'transacoesFornecedor': {
+                    '$slice': ['$transacoesFornecedor', 1, 1]
+                }
+            }}
+        ]).to_list()
 
         if not fornecedor:
-            raise NotFoundException("Não existe fornecedor ou transação com esses respectivos ID's.")
+            raise NotFoundException("O respectivo fornecedor não existe.")
 
         if not transacao.data_transacao or transacao.quantidade == 0 or not transacao.listaDosProdutos or len(
                 transacao.listaDosProdutos) == 0:
             raise BadRequestException("Objeto de atualização incorreto")
 
-        t = fornecedor.transacoesFornecedor[0]
-        t.data_transacao = transacao.data_transacao
-        t.quantidade = transacao.quantidade
-        t.listaDosProdutos = transacao.listaDosProdutos
-
-        await fornecedor.save()
-
+        await Fornecedor.update(
+            Fornecedor(**fornecedor[0]),
+            {
+                '$set': {
+                    'transacoesFornecedor.$[elem].data_transacao': transacao.data_transacao,
+                    'transacoesFornecedor.$[elem].quantidade': transacao.quantidade,
+                    'transacoesFornecedor.$[elem].listaDosProdutos': transacao.listaDosProdutos,
+                }
+            },
+            array_filters=[{'elem.id': transacao_id}],
+        )
     except BusinessException as e:
         raise e
 
@@ -157,21 +254,26 @@ async def atualizar(fornecedor_id: PydanticObjectId, transacao_id: PydanticObjec
         raise Exception("Erro interno ao atualizar transação.")
 
 
-async def deletar(fornecedor_id: PydanticObjectId, transacao_id: PydanticObjectId):
+async def deletar(fornecedor_id: PydanticObjectId, transacao_id: str):
     try:
-        fornecedor = await Fornecedor.find_one({
-            '_id': fornecedor_id,
-            'transacoesFornecedor': {
-                'id': transacao_id
-            }
-        })
+        fornecedor = await Fornecedor.aggregate([
+            {'$match': {'_id': fornecedor_id}},
+            {'$project': {
+                '_id': 1,
+                'nome': 1,
+                'cnpj': 1,
+                'contato': 1,
+                'endereco': 1,
+                'transacoesFornecedor': {
+                    '$slice': ['$transacoesFornecedor', 1, 1]
+                }
+            }}
+        ]).to_list()
 
         if not fornecedor:
             raise NotFoundException("Não existe fornecedor ou transação com esses respectivos ID's.")
 
-        fornecedor.transacoesFornecedor.remove(fornecedor.transacoesFornecedor[0])
-        await fornecedor.save()
-
+        await Fornecedor.update(Fornecedor(**fornecedor[0]), {'$pull': {'transacoesFornecedor': {'id': transacao_id}}})
     except BusinessException as e:
         raise e
 

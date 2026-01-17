@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Query
@@ -36,11 +37,11 @@ async def listar_transacoes(
     if offset < 1 or limit < 1:
         return "Offset e limit devem ser maiores ou iguais a 0."
 
-    return await resgatarTodas(fornecedor_id, offset, limit)
+    return await resgatarTodas(fornecedor_id, offset, limit, data_inicial, data_final)
 
 
 @router.get("/{fornecedor_id}/transacoes/{transacao_id}")
-async def obter_transacao(fornecedor_id: PydanticObjectId, transacao_id: PydanticObjectId):
+async def obter_transacao(fornecedor_id: PydanticObjectId, transacao_id: str):
     """
     Obtém uma transação específica pelo ID.
 
@@ -79,7 +80,7 @@ async def criar_transacao(fornecedor_id: PydanticObjectId, novaTransacao: Create
 
 
 @router.put("/{fornecedor_id}/transacoes/{transacao_id}")
-async def atualizar_transacao(fornecedor_id: PydanticObjectId, transacao_id: PydanticObjectId,
+async def atualizar_transacao(fornecedor_id: PydanticObjectId, transacao_id: str,
                               transacaoAtualizada: UpdateTransacao):
     """
     Atualiza uma transação existente.
@@ -102,7 +103,7 @@ async def atualizar_transacao(fornecedor_id: PydanticObjectId, transacao_id: Pyd
 
 
 @router.delete("/{fornecedor_id}/transacoes/{transacao_id}")
-async def deletar_transacao(fornecedor_id: PydanticObjectId, transacao_id: PydanticObjectId):
+async def deletar_transacao(fornecedor_id: PydanticObjectId, transacao_id: str):
     """
     Deleta uma transação pelo ID.
 

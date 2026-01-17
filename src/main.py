@@ -7,16 +7,15 @@ from starlette import status
 from starlette.responses import JSONResponse
 
 from database.database import initDB
-from exceptions.bad_request_exception import BadRequestException
 from exceptions.business_exception import BusinessException
-from exceptions.not_found_exception import NotFoundException
 from routers.prodForn_router import routerProdForn
 from routers.produto_router import routerProduto
 from routers.transacao_router import router as routerTransacao
+from routers.fornecedor_router import routerFornecedor
 
 tags_metadata = [
     {
-        "name": "Fornecedor",
+        "name": "Fornecedores",
         "description": "Operações de gerenciamento de fornecedores",
     },
     {
@@ -68,3 +67,4 @@ async def business_exception_handler(request: Request, exc: Exception):
 app.include_router(routerProduto)
 app.include_router(routerProdForn)
 app.include_router(routerTransacao)
+app.include_router(routerFornecedor)

@@ -1,4 +1,7 @@
-from pydantic import Field
+import uuid
+from uuid import UUID
+
+from pydantic import Field, ConfigDict
 from datetime import datetime
 
 from beanie import PydanticObjectId
@@ -8,7 +11,7 @@ from models.produto import ProdutoDto
 
 
 class Transacao(BaseModel):
-    id: PydanticObjectId = Field(default_factory=PydanticObjectId)
+    id: str = Field(default=str(uuid.uuid4()))
     quantidade: int
     data_transacao: datetime | None
     listaDosProdutos: list[ProdutoDto]
