@@ -53,7 +53,7 @@ async def cadastrarProdForn(novoProdForn: ProdutoFornecedorDTO):
 
     except Exception:
         logger.error(
-            "Erro ao acessar cadastrar uma nova relação produto-fornecedor",
+            "Erro ao acessar cadastrar uma nova relação produto-fornecedor.",
             exc_info=True
         )
         raise Exception("Erro interno ao cadastrar uma nova relação produto-fornecedor.")

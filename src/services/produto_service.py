@@ -94,7 +94,7 @@ async def totalVendasDaCategoria(categoria):
         raise Exception("Erro interno ao acessar produtos.")
 
 
-async def produtosMaisCaros(typeSort, limit, offset):
+async def produtosPorPreco(typeSort, limit, offset):
     try:
         pipeLine = [
             {
