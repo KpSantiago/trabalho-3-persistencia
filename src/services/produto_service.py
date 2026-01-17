@@ -100,7 +100,7 @@ async def totalVendasDaCategoria(categoria):
 
     return response
 
-async def produtosMaisCaros(typeSort,limit,offset):
+async def produtosPorPreco(typeSort,limit,offset):
     try:
         pipeLine = [
             {
