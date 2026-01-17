@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from datetime import datetime
 from urllib.request import Request
 
@@ -5,11 +6,13 @@ from fastapi import FastAPI
 from starlette import status
 from starlette.responses import JSONResponse
 
-from exceptions.business_exception import BusinessException
-from routers.produto_router import routerProduto
 from database.database import initDB
-from contextlib import asynccontextmanager
+from exceptions.bad_request_exception import BadRequestException
+from exceptions.business_exception import BusinessException
+from exceptions.not_found_exception import NotFoundException
 from routers.prodForn_router import routerProdForn
+from routers.produto_router import routerProduto
+from routers.transacao_router import router as routerTransacao
 
 tags_metadata = [
     {
@@ -49,9 +52,8 @@ async def business_exception_handler(request: Request, exc: Exception):
             status_code=exc.status_code,
             content={
                 "status_code": exc.status_code,
-                "message": exc.message,
+                "message": exc.message[0],
                 "timestamp": datetime.now().isoformat(),
-                "api_path": request.get_full_url()
             })
 
     return JSONResponse(
@@ -60,10 +62,9 @@ async def business_exception_handler(request: Request, exc: Exception):
             "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
             "message": str(exc),
             "timestamp": datetime.now().isoformat(),
-            "api_path": request.get_full_url()
         })
 
 
 app.include_router(routerProduto)
 app.include_router(routerProdForn)
-# app.include_router(routerTransacao)
+app.include_router(routerTransacao)
