@@ -10,6 +10,40 @@ from models.produtoFornecedor import ProdutoFornecedor, ProdutoFornecedorUpdate,
 logger = logging.getLogger(__name__)
 
 
+async def resgatarTodas(offset: int, limit: int):
+    try:
+        skip = (offset - 1) * limit
+
+        return await ProdutoFornecedor.find({}).skip(skip).limit(limit).to_list()
+
+    except Exception as e:
+        logger.error(
+            "Erro ao acessar as relações",
+            exc_info=True
+        )
+        raise Exception("Erro interno ao acessar as relações entre produtos e fornecedores.")
+
+
+async def resgatarUma(id: PydanticObjectId):
+    try:
+        relacao = await ProdutoFornecedor.find_one(ProdutoFornecedor.id == id)
+
+        if not relacao:
+            raise NotFoundException("A relação produto-fornecedor não existe.")
+
+        return relacao
+
+    except BusinessException as e:
+        raise e
+
+    except Exception as e:
+        logger.error(
+            "Erro ao acessar as relações",
+            exc_info=True
+        )
+        raise Exception("Erro interno as relações entre produtos e fornecedores.")
+
+
 async def cadastrarProdForn(novoProdForn: ProdutoFornecedorDTO):
     try:
         newProdForn = ProdutoFornecedor(produto_id=novoProdForn.produto_id, fornecedor_id=novoProdForn.fornecedor_id)
@@ -29,7 +63,7 @@ async def deletarProdForn(id):
     try:
         relacao = await ProdutoFornecedor.find_one(ProdutoFornecedor.id == id)
 
-        if (relacao):
+        if relacao:
             return "Relacao excluida com sucesso"
 
         raise NotFoundException("A relação produto-fornecedor não existe.")
