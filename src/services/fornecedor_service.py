@@ -80,17 +80,12 @@ async def listarFornecedoresPorCategoriaProduto(categoria: str, page: int = 1, p
 
 async def buscar_fornecedor_por_nome(nome: str, limit: int = 20, offset: int = 0):
     try:
-        pipeline = [
-            {
-                "$match": {
-                    "nome": {"$regex": nome, "$options": "i"}
-                }
-            },
-            {"$skip": offset},
-            {"$limit": limit}
-        ]
+        from beanie import PydanticObjectId
+        fornecedores = await Fornecedor.find(
+            {"nome": {"$regex": nome, "$options": "i"}}
+        ).skip(offset).limit(limit).to_list()
         
-        return await Fornecedor.aggregate(pipeline).to_list(None)
+        return fornecedores
     except Exception:
         logger.error("Erro ao buscar por nome")
         raise Exception("Erro na busca")
@@ -98,15 +93,11 @@ async def buscar_fornecedor_por_nome(nome: str, limit: int = 20, offset: int = 0
 
 async def buscar_fornecedor_por_endereco(endereco: str):
     try:
-        pipeline = [
-            {
-                "$match": {
-                    "endereco": {"$regex": endereco, "$options": "i"}
-                }
-            }
-        ]
+        fornecedores = await Fornecedor.find(
+            {"endereco": {"$regex": endereco, "$options": "i"}}
+        ).to_list()
         
-        return await Fornecedor.aggregate(pipeline).to_list(None)
+        return fornecedores
     except Exception:
         logger.error("Erro ao buscar por endereço")
         raise Exception("Erro na busca")
@@ -124,15 +115,10 @@ async def contar_fornecedores():
 async def ordenar_fornecedores_por_nome(ordem: str = "asc", page: int = 1, page_size: int = 10):
     try:
         skip = (page - 1) * page_size
-        direction = 1 if ordem == "asc" else -1
+        sort_order = 1 if ordem == "asc" else -1
         
-        pipeline = [
-            {"$sort": {"nome": direction}},
-            {"$skip": skip},
-            {"$limit": page_size}
-        ]
-        
-        return await Fornecedor.aggregate(pipeline).to_list(None)
+        fornecedores = await Fornecedor.find_all().sort([("nome", sort_order)]).skip(skip).limit(page_size).to_list()
+        return fornecedores
     except Exception:
         logger.error("Erro ao ordenar")
         raise Exception("Erro ao ordenar fornecedores")
@@ -140,13 +126,10 @@ async def ordenar_fornecedores_por_nome(ordem: str = "asc", page: int = 1, page_
 
 async def ordenar_fornecedores_por_cnpj(ordem: str = "asc"):
     try:
-        direction = 1 if ordem == "asc" else -1
+        sort_order = 1 if ordem == "asc" else -1
         
-        pipeline = [
-            {"$sort": {"cnpj": direction}}
-        ]
-        
-        return await Fornecedor.aggregate(pipeline).to_list(None)
+        fornecedores = await Fornecedor.find_all().sort([("cnpj", sort_order)]).to_list()
+        return fornecedores
     except Exception:
         logger.error("Erro ao ordenar por CNPJ")
         raise Exception("Erro ao ordenar fornecedores")
