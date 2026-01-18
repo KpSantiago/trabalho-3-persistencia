@@ -68,11 +68,31 @@ async def listarFornecedoresPorCategoriaProduto(categoria: str, page: int = 1, p
                     "produtos.categoria": categoria
                 }
             },
+            {
+                "$project": {
+                    "_id": 0,
+                    "cnpj": 1,
+                    "nome": 1,
+                    "contato": 1,
+                    "endereco": 1,
+                    "produtos": {
+                        "$map": {
+                            "input": "$produtos",
+                            "as": "p",
+                            "in": {
+                                "mercadoria": "$$p.mercadoria",
+                                "valor": "$$p.valor",
+                                "categoria": "$$p.categoria"
+                            }
+                        }
+                    }
+                }
+            },
             {"$skip": skip},
             {"$limit": page_size}
         ]
-        
-        return await Fornecedor.aggregate(pipeline).to_list(None)
+
+        return await Fornecedor.aggregate(pipeline).to_list()
     except Exception:
         logger.error("Erro ao filtrar por categoria")
         raise Exception("Erro ao filtrar fornecedores")
