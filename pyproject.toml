@@ -15,4 +15,5 @@ dependencies = [
     "pydantic>=2.12.4",
     "pymongo[srv]>=4.15.5",
     "pytest>=9.0.2",
+    "faker>=24.9.0",
 ]
