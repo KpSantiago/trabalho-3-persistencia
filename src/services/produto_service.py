@@ -6,6 +6,8 @@ from exceptions.bad_request_exception import BadRequestException
 from exceptions.business_exception import BusinessException
 from exceptions.not_found_exception import NotFoundException
 from models.produto import Produto, ProdutoDto, ProdutoUpdate, produtoList_serializer
+from services.fornecedor_service import listarFornecedoresComProdutos
+from datetime import datetime,date
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,30 @@ async def produtosPorNome(nome, limit, offset):
         produtosLista = await Produto.find(Produto.mercadoria == nome).skip(offset).limit(limit).to_list()
 
         return produtosLista
+    except Exception:
+        logger.error(
+            "Erro ao acessar produtos",
+            exc_info=True
+        )
+        raise Exception("Erro interno ao acessar produtos.")
+
+
+async def produtosTransacionadosPorData(dataInicio: datetime, dataFim: datetime):
+    try:
+        dataInicio = datetime.fromisoformat(dataInicio)
+        dataFim = datetime.fromisoformat(dataFim)
+
+        fornecedores = await listarFornecedoresComProdutos()
+
+        produtosList = []
+
+        for forn in fornecedores:
+            for tran in forn["transacoesFornecedor"]:
+                if(tran["data_transacao"] > dataInicio and tran["data_transacao"] < dataFim):
+                    produtosList[len(produtosList):] = tran["listaDosProdutos"]
+        
+
+        return produtosList
     except Exception:
         logger.error(
             "Erro ao acessar produtos",

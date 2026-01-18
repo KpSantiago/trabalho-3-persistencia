@@ -9,6 +9,10 @@ routerProduto = APIRouter(prefix="/produto", tags=["Produto"])
 async def ProdutoPorNome(nome:str,limit:int,offset:int):
     return await service.produtosPorNome(nome,limit,offset)
 
+@routerProduto.get("/produtosTransacionadosPorData/{dataInicio}/{dataFim}")
+async def produtosTransacionadosPorData(dataInicio:str,dataFim:str):
+    return await service.produtosTransacionadosPorData(dataInicio,dataFim)
+
 @routerProduto.get("/produtosPorCategoria/{categoria}/{limit}/{offset}")
 async def ProdutosPorCategoria(categoria: str,limit:int,offset:int):
     return await service.produtosPorCategoria(categoria,limit,offset)
