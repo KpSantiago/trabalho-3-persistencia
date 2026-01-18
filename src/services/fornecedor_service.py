@@ -22,6 +22,9 @@ async def listarFornecedoresComProdutos(page: int = 1, page_size: int = 10):
         
         pipeline = [
             {
+                "$project": {"_id": 0}
+            },
+            {
                 "$lookup": {
                     "from": "produtoFornecedor",
                     "localField": "_id",
@@ -32,8 +35,8 @@ async def listarFornecedoresComProdutos(page: int = 1, page_size: int = 10):
             {"$skip": skip},
             {"$limit": page_size}
         ]
-        
-        return await Fornecedor.aggregate(pipeline).to_list(None)
+
+        return await Fornecedor.aggregate(pipeline).to_list()
     except Exception:
         logger.error("Erro ao listar fornecedores com produtos")
         raise Exception("Erro ao listar fornecedores")
