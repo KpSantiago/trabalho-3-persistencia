@@ -1,8 +1,9 @@
 from datetime import datetime
-from uuid import UUID
 
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Query
+from starlette import status
+from starlette.responses import JSONResponse
 
 from models.transacao import Transacao, CreateTransacao, UpdateTransacao
 from services.transacao_service import resgatarTodas, resgatarUm, criar, atualizar, deletar
@@ -37,7 +38,13 @@ async def listar_transacoes(
     if offset < 1 or limit < 1:
         return "Offset e limit devem ser maiores ou iguais a 0."
 
-    return await resgatarTodas(fornecedor_id, offset, limit, data_inicial, data_final)
+    response = await resgatarTodas(fornecedor_id, offset, limit, data_inicial, data_final)
+
+    return {
+        'content': response,
+        'offset': offset,
+        'limit': limit
+    }
 
 
 @router.get("/{fornecedor_id}/transacoes/{transacao_id}")
@@ -76,7 +83,8 @@ async def criar_transacao(fornecedor_id: PydanticObjectId, novaTransacao: Create
         quantidade=novaTransacao.quantidade,
     )
 
-    return await criar(fornecedor_id, transacao)
+    await criar(fornecedor_id, transacao)
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content={'message': "Transação criada com sucesso"})
 
 
 @router.put("/{fornecedor_id}/transacoes/{transacao_id}")
@@ -99,7 +107,9 @@ async def atualizar_transacao(fornecedor_id: PydanticObjectId, transacao_id: str
         quantidade=transacaoAtualizada.quantidade,
     )
 
-    return await atualizar(fornecedor_id, transacao_id, transacao)
+    await atualizar(fornecedor_id, transacao_id, transacao)
+    return JSONResponse(status_code=status.HTTP_200_OK, content={'message': "Transação atualizada com sucesso"})
+
 
 
 @router.delete("/{fornecedor_id}/transacoes/{transacao_id}")
@@ -113,4 +123,6 @@ async def deletar_transacao(fornecedor_id: PydanticObjectId, transacao_id: str):
     Returns:\n
         Mensagem de sucesso ou erro
     """
-    return await deletar(fornecedor_id, transacao_id)
+    await deletar(fornecedor_id, transacao_id)
+
+    return JSONResponse(status_code=status.HTTP_200_OK, content={'message': "Transação deletada com sucesso"})
