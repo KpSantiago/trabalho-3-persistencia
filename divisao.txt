@@ -1,0 +1,15 @@
+Narciso
+
+- estruturei o projeto
+- Implementei funcionalidades intrínsecas da classe Produto, Como Create, Update, Delete, Read (CRUD) na classe produto, tratei os erros devidamente.
+- Além de funcionalidade de pesquisas avançadas como pesquisas por relacionamento e agregação e pesquisas por data e ano em Produto, também criei suas rotas de acesso.
+- Implementei o banco de dados mongo db no atlas
+- Criei a classe de modelos e seus relacionamentos, Como  Produto, dtos e etc
+
+Mateus
+
+Fiz o services, models, dto e routers de fornecedor com ordenação, consultas relacionadas e crud padrão, fiz o populardb e o env example
+
+Kauã Santiago
+
+Fiz o handle global de exceções e fiz a implementação de todo o crud de transações e tudo relacionado a ele, além de adicionar o uso de exceções customizadas no projeto.
